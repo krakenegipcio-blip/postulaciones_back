@@ -13,7 +13,7 @@ const ALLOWED_TABLES = [
 
 // GET /api/:table
 router.get('/:table', authMiddleware, async (req, res) => {
-  const { table } = req.params;
+  const table = req.params.table as string;
   const userId = req.user?.id;
   
   if (!ALLOWED_TABLES.includes(table)) return res.status(400).json({ error: 'Tabla no permitida' });
@@ -40,7 +40,7 @@ router.get('/:table', authMiddleware, async (req, res) => {
 
 // POST /api/:table
 router.post('/:table', authMiddleware, async (req, res) => {
-  const { table } = req.params;
+  const table = req.params.table as string;
   const userId = req.user?.id;
   
   if (!ALLOWED_TABLES.includes(table)) return res.status(400).json({ error: 'Tabla no permitida' });
@@ -60,7 +60,8 @@ router.post('/:table', authMiddleware, async (req, res) => {
 
 // PUT /api/:table/:id
 router.put('/:table/:id', authMiddleware, async (req, res) => {
-  const { table, id } = req.params;
+  const table = req.params.table as string;
+  const id = req.params.id as string;
   const userId = req.user?.id;
   
   if (!ALLOWED_TABLES.includes(table)) return res.status(400).json({ error: 'Tabla no permitida' });
@@ -88,7 +89,8 @@ router.put('/:table/:id', authMiddleware, async (req, res) => {
 
 // DELETE /api/:table/:id
 router.delete('/:table/:id', authMiddleware, async (req, res) => {
-  const { table, id } = req.params;
+  const table = req.params.table as string;
+  const id = req.params.id as string;
   const userId = req.user?.id;
   
   if (!ALLOWED_TABLES.includes(table)) return res.status(400).json({ error: 'Tabla no permitida' });
