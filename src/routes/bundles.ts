@@ -40,20 +40,25 @@ router.get('/', authMiddleware, async (req, res) => {
 router.post('/', authMiddleware, async (req, res) => {
   const userId = req.user?.id;
   try {
-    const { nombre, id_empresa, id_cargo, id_nivel, id_plataforma, id_ubicacion, id_modalidad, id_estado, sueldo_ofrecido, sueldo_pedido } = req.body;
+    const { nombre, id_empresa, id_cargo, id_nivel, id_plataforma, id_ubicacion, id_modalidad, id_estado, sueldo_ofrecido, sueldo_pedido, es_default } = req.body;
     if (!nombre?.trim()) return res.status(400).json({ error: 'El nombre del bundle es requerido' });
+
+    if (es_default) {
+      await pool.query('UPDATE bundle_postulacion SET es_default = false WHERE usuario_id = $1', [userId]);
+    }
 
     const { rows } = await pool.query(
       `INSERT INTO bundle_postulacion (
         nombre, usuario_id, id_empresa, id_cargo, id_nivel, id_plataforma,
-        id_ubicacion, id_modalidad, id_estado, sueldo_ofrecido, sueldo_pedido
-       ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
+        id_ubicacion, id_modalidad, id_estado, sueldo_ofrecido, sueldo_pedido, es_default
+       ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
        RETURNING *`,
       [
         nombre.trim(), userId,
         id_empresa || null, id_cargo || null, id_nivel || null, id_plataforma || null,
         id_ubicacion || null, id_modalidad || null, id_estado || null,
         sueldo_ofrecido ?? null, sueldo_pedido ?? null,
+        Boolean(es_default)
       ]
     );
     res.json(rows[0]);
@@ -68,20 +73,26 @@ router.put('/:id', authMiddleware, async (req, res) => {
   const userId = req.user?.id;
   const id = Number(req.params.id);
   try {
-    const { nombre, id_empresa, id_cargo, id_nivel, id_plataforma, id_ubicacion, id_modalidad, id_estado, sueldo_ofrecido, sueldo_pedido } = req.body;
+    const { nombre, id_empresa, id_cargo, id_nivel, id_plataforma, id_ubicacion, id_modalidad, id_estado, sueldo_ofrecido, sueldo_pedido, es_default } = req.body;
     if (!nombre?.trim()) return res.status(400).json({ error: 'El nombre del bundle es requerido' });
+
+    if (es_default) {
+      await pool.query('UPDATE bundle_postulacion SET es_default = false WHERE usuario_id = $1 AND id != $2', [userId, id]);
+    }
 
     const { rowCount } = await pool.query(
       `UPDATE bundle_postulacion SET
         nombre = $1, id_empresa = $2, id_cargo = $3, id_nivel = $4,
         id_plataforma = $5, id_ubicacion = $6, id_modalidad = $7,
-        id_estado = $8, sueldo_ofrecido = $9, sueldo_pedido = $10
-       WHERE id = $11 AND usuario_id = $12`,
+        id_estado = $8, sueldo_ofrecido = $9, sueldo_pedido = $10,
+        es_default = $11
+       WHERE id = $12 AND usuario_id = $13`,
       [
         nombre.trim(),
         id_empresa || null, id_cargo || null, id_nivel || null, id_plataforma || null,
         id_ubicacion || null, id_modalidad || null, id_estado || null,
         sueldo_ofrecido ?? null, sueldo_pedido ?? null,
+        Boolean(es_default),
         id, userId,
       ]
     );
