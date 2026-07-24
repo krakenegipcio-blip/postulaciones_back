@@ -7,6 +7,7 @@ import seguimientoRouter from './routes/seguimiento.js';
 import dashboardRouter from './routes/dashboard.js';
 import catalogsRouter from './routes/catalogs.js';
 import authRouter from './routes/auth.js';
+import bundlesRouter from './routes/bundles.js';
 
 dotenv.config();
 
@@ -29,6 +30,7 @@ app.use(cookieParser());
 app.use('/api/auth', authRouter);
 app.use('/api/postulaciones', seguimientoRouter);
 app.use('/api/postulaciones', postulacionesRouter);
+app.use('/api/bundles', bundlesRouter);
 app.use('/api/dashboard', dashboardRouter);
 
 // Rutas genéricas de catálogos AL FINAL

@@ -4,13 +4,7 @@ import { authMiddleware } from '../middleware/authMiddleware.js';
 
 const router = Router();
 
-const RESULTADOS_PERMITIDOS = new Set(['pendiente', 'completado', 'aprobado', 'rechazado', 'cancelado']);
-
 function normalizeStep(body: Record<string, any>) {
-  const resultado = body.resultado ?? 'pendiente';
-  if (!RESULTADOS_PERMITIDOS.has(resultado)) {
-    throw new Error('Resultado de seguimiento no permitido');
-  }
   if (!body.id_fase_seguimiento) {
     throw new Error('Debe seleccionar una fase de seguimiento');
   }
@@ -21,12 +15,8 @@ function normalizeStep(body: Record<string, any>) {
   return {
     id_fase_seguimiento: Number(body.id_fase_seguimiento),
     id_metodo_evaluacion: body.id_metodo_evaluacion ? Number(body.id_metodo_evaluacion) : null,
-    titulo: body.titulo?.trim() || null,
     nota: body.nota?.trim() || null,
     fecha_evento: body.fecha_evento,
-    fecha_limite: body.fecha_limite || null,
-    resultado,
-    orden: body.orden !== undefined && body.orden !== null && body.orden !== '' ? Number(body.orden) : 0,
   };
 }
 
@@ -52,7 +42,7 @@ router.get('/:id/seguimiento', authMiddleware, async (req, res) => {
        JOIN fase_seguimiento fs ON ps.id_fase_seguimiento = fs.id
        LEFT JOIN metodo_evaluacion me ON ps.id_metodo_evaluacion = me.id
        WHERE ps.id_postulacion = $1
-       ORDER BY ps.orden ASC, ps.fecha_evento ASC, ps.id ASC`,
+       ORDER BY ps.fecha_evento ASC, ps.id ASC`,
       [postId]
     );
     res.json(rows);
@@ -75,19 +65,15 @@ router.post('/:id/seguimiento', authMiddleware, async (req, res) => {
     const { rows } = await pool.query(
       `INSERT INTO postulacion_seguimiento (
         id_postulacion, id_fase_seguimiento, id_metodo_evaluacion,
-        titulo, nota, fecha_evento, fecha_limite, resultado, orden
-       ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+        nota, fecha_evento
+       ) VALUES ($1, $2, $3, $4, $5)
        RETURNING *`,
       [
         postId,
         step.id_fase_seguimiento,
         step.id_metodo_evaluacion,
-        step.titulo,
         step.nota,
-        step.fecha_evento,
-        step.fecha_limite,
-        step.resultado,
-        step.orden
+        step.fecha_evento
       ]
     );
 
@@ -113,23 +99,15 @@ router.put('/:id/seguimiento/:stepId', authMiddleware, async (req, res) => {
       `UPDATE postulacion_seguimiento SET
         id_fase_seguimiento = $1,
         id_metodo_evaluacion = $2,
-        titulo = $3,
-        nota = $4,
-        fecha_evento = $5,
-        fecha_limite = $6,
-        resultado = $7,
-        orden = $8,
+        nota = $3,
+        fecha_evento = $4,
         updated_at = NOW()
-       WHERE id = $9 AND id_postulacion = $10`,
+       WHERE id = $5 AND id_postulacion = $6`,
       [
         step.id_fase_seguimiento,
         step.id_metodo_evaluacion,
-        step.titulo,
         step.nota,
         step.fecha_evento,
-        step.fecha_limite,
-        step.resultado,
-        step.orden,
         stepId,
         postId
       ]
