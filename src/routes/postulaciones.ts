@@ -9,7 +9,7 @@ router.get('/', authMiddleware, async (req, res) => {
   try {
     const { page = '1', per_page = '15', sort_col = 'id', sort_dir = 'asc',
             id_empresa, id_estado, id_modalidad, id_cargo, sueldo_min, sueldo_max,
-            search, tecnologias } = req.query as Record<string, string>;
+            search, tecnologias, id_area } = req.query as Record<string, string>;
 
     const allowedSort = ['id', 'id_empresa', 'id_cargo', 'id_estado', 'id_modalidad', 'sueldo_ofrecido', 'fecha_postulacion'];
     const col = allowedSort.includes(sort_col) ? `p.${sort_col}` : 'p.id';
@@ -24,6 +24,7 @@ router.get('/', authMiddleware, async (req, res) => {
     params.push(req.user?.id);
 
     if (id_empresa) { conditions.push(`p.id_empresa = $${idx++}`); params.push(Number(id_empresa)); }
+    if (id_area) { conditions.push(`p.id_area = $${idx++}`); params.push(Number(id_area)); }
     if (id_estado) { conditions.push(`p.id_estado = $${idx++}`); params.push(Number(id_estado)); }
     if (id_modalidad) { conditions.push(`p.id_modalidad = $${idx++}`); params.push(Number(id_modalidad)); }
     if (id_cargo) { conditions.push(`p.id_cargo = $${idx++}`); params.push(Number(id_cargo)); }
@@ -63,11 +64,12 @@ router.get('/', authMiddleware, async (req, res) => {
     // Main query
     const mainQ = `
       SELECT p.*,
-        row_to_json(e) as empresa, row_to_json(c) as cargo,
+        row_to_json(a) as area, row_to_json(e) as empresa, row_to_json(c) as cargo,
         row_to_json(s) as estado, row_to_json(pl) as plataforma,
         row_to_json(m) as modalidad, row_to_json(u) as ubicacion,
         row_to_json(ne) as nivel_experiencia
       FROM postulacion p
+      LEFT JOIN area a ON p.id_area = a.id
       LEFT JOIN empresa e ON p.id_empresa = e.id
       LEFT JOIN cargo c ON p.id_cargo = c.id
       LEFT JOIN estado s ON p.id_estado = s.id
