@@ -64,11 +64,12 @@ router.get('/', authMiddleware, async (req, res) => {
     // Main query
     const mainQ = `
       SELECT p.*,
-        row_to_json(a) as area, row_to_json(e) as empresa, row_to_json(c) as cargo,
+        row_to_json(d) as duracion, row_to_json(a) as area, row_to_json(e) as empresa, row_to_json(c) as cargo,
         row_to_json(s) as estado, row_to_json(pl) as plataforma,
         row_to_json(m) as modalidad, row_to_json(u) as ubicacion,
         row_to_json(ne) as nivel_experiencia
       FROM postulacion p
+      LEFT JOIN duracion d ON p.id_duracion = d.id
       LEFT JOIN area a ON p.id_area = a.id
       LEFT JOIN empresa e ON p.id_empresa = e.id
       LEFT JOIN cargo c ON p.id_cargo = c.id

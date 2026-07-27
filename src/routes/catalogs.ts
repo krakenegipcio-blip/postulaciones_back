@@ -8,7 +8,7 @@ const ALLOWED_TABLES = [
   'empresa', 'cargo', 'estado', 'plataforma',
   'modalidad', 'ubicacion', 'tecnologia',
   'metodo_evaluacion', 'nivel_experiencia',
-  'fase_seguimiento', 'area',
+  'fase_seguimiento', 'area', 'duracion',
 ];
 
 // GET /api/:table
