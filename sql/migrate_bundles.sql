@@ -1,0 +1,6 @@
+BEGIN;
+
+ALTER TABLE bundle_postulacion ADD COLUMN IF NOT EXISTS id_area INT REFERENCES area(id) ON DELETE SET NULL;
+ALTER TABLE bundle_postulacion ADD COLUMN IF NOT EXISTS id_duracion INT REFERENCES duracion(id) ON DELETE SET NULL;
+
+COMMIT;
