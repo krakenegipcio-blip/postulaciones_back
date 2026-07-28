@@ -16,7 +16,9 @@ function normalizeStep(body: Record<string, any>) {
     id_fase_seguimiento: Number(body.id_fase_seguimiento),
     id_metodo_evaluacion: body.id_metodo_evaluacion ? Number(body.id_metodo_evaluacion) : null,
     nota: body.nota?.trim() || null,
+    nota: body.nota?.trim() || null,
     fecha_evento: body.fecha_evento,
+    preguntas_ids: Array.isArray(body.preguntas_ids) ? body.preguntas_ids.map(Number).filter(n => !isNaN(n)) : [],
   };
 }
 
@@ -37,7 +39,13 @@ router.get('/:id/seguimiento', authMiddleware, async (req, res) => {
     const { rows } = await pool.query(
       `SELECT ps.*,
         row_to_json(fs) as fase,
-        row_to_json(me) as metodo
+        row_to_json(me) as metodo,
+        (
+          SELECT json_agg(pf)
+          FROM seguimiento_pregunta sp
+          JOIN preguntas_frecuentes pf ON sp.id_pregunta_frecuente = pf.id
+          WHERE sp.id_postulacion_seguimiento = ps.id
+        ) as preguntas
        FROM postulacion_seguimiento ps
        JOIN fase_seguimiento fs ON ps.id_fase_seguimiento = fs.id
        LEFT JOIN metodo_evaluacion me ON ps.id_metodo_evaluacion = me.id
@@ -77,7 +85,18 @@ router.post('/:id/seguimiento', authMiddleware, async (req, res) => {
       ]
     );
 
-    res.json(rows[0]);
+    const newStep = rows[0];
+
+    // Insertar preguntas
+    if (step.preguntas_ids && step.preguntas_ids.length > 0) {
+      const values = step.preguntas_ids.map((id: number) => `(${newStep.id}, ${id})`).join(', ');
+      await pool.query(`INSERT INTO seguimiento_pregunta (id_postulacion_seguimiento, id_pregunta_frecuente) VALUES ${values}`);
+      
+      // Actualizar frecuencias
+      await pool.query(`UPDATE preguntas_frecuentes SET frecuencia = frecuencia + 1 WHERE id = ANY($1::int[])`, [step.preguntas_ids]);
+    }
+
+    res.json(newStep);
   } catch (err: any) {
     console.error(err);
     res.status(400).json({ error: err.message });
@@ -114,6 +133,19 @@ router.put('/:id/seguimiento/:stepId', authMiddleware, async (req, res) => {
     );
 
     if (rowCount === 0) return res.status(404).json({ error: 'Paso de seguimiento no encontrado' });
+
+    // Borrar relaciones anteriores
+    await pool.query('DELETE FROM seguimiento_pregunta WHERE id_postulacion_seguimiento = $1', [stepId]);
+
+    // Insertar nuevas
+    if (step.preguntas_ids && step.preguntas_ids.length > 0) {
+      const values = step.preguntas_ids.map((id: number) => `(${stepId}, ${id})`).join(', ');
+      await pool.query(`INSERT INTO seguimiento_pregunta (id_postulacion_seguimiento, id_pregunta_frecuente) VALUES ${values}`);
+      
+      // Actualizar frecuencias
+      await pool.query(`UPDATE preguntas_frecuentes SET frecuencia = frecuencia + 1 WHERE id = ANY($1::int[])`, [step.preguntas_ids]);
+    }
+
     res.json({ success: true });
   } catch (err: any) {
     console.error(err);
